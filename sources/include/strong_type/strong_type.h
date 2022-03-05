@@ -61,7 +61,6 @@ struct convertible_to_bool
     explicit constexpr operator bool() const noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        using type = underlying_type<StrongT>;
         return static_cast<const StrongT&>(*this).get();
     }
 };
@@ -71,7 +70,6 @@ struct comparisons
 {
     friend constexpr bool operator<(const StrongT& aLhs, const StrongT& aRhs)
     {
-        using type = underlying_type<StrongT>;
         return aLhs.get() < aRhs.get();
     }
 

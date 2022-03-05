@@ -40,13 +40,9 @@ endif()
 message(STATUS "ALL_CXX_FLAGS: ${ALL_CXX_FLAGS}")
 
 target_sources(strong_type
-	INTERFACE
+	PRIVATE
     include/strong_type/strong_type.h
   )
-
-set(MAIN_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
-
-set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_compile_definitions(strong_type INTERFACE $<UPPER_CASE:$<CONFIG>>)
 target_compile_options(strong_type INTERFACE ${ALL_CXX_FLAGS})
