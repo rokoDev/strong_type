@@ -48,15 +48,11 @@ install:
           echo ("REMOTETOLOCAL: "+"$REMOTETOLOCAL") 2> $null
           git fetch origin "$REMOTETOLOCAL" 2> $null
       }
-      git checkout --recurse-submodules $BRANCH 2> $null
-      git submodule foreach --recursive git checkout master 2> $null
-  - cmd: git submodule update --init --recursive
   - ps: |
       $CUR_BRANCH_NAME = git branch --show-current
       echo ("Current branch: "+"$CUR_BRANCH_NAME") 2> $null
       $CUR_SHA1 = git rev-parse HEAD
       echo ("Current commit: "+"$CUR_SHA1") 2> $null
-      git submodule status --recursive
       if ( "$env:CONFIGURATION" -eq "Debug")
       {
           if ( "$env:APPVEYOR_PULL_REQUEST_NUMBER" -eq "" )
@@ -90,7 +86,7 @@ before_build:
   - cmake -G "Visual Studio 16 2019" -A x64 -T ClangCL ..
 
 build_script:
-  - cmake --build . --target ndt_tests --config %CONFIGURATION%
+  - cmake --build . --target strong_type_tests --config %CONFIGURATION%
 
 test_script:
   - ctest -VV --output-on-failure -C %CONFIGURATION%
