@@ -7,7 +7,11 @@ class strong_type : public Ops<strong_type<Tag, T, Ops...>>...
 {
    public:
     strong_type() = default;
-    explicit constexpr strong_type(T const& value) : value_(value) {}
+    explicit constexpr strong_type(T const& value) noexcept(
+        std::is_nothrow_copy_constructible_v<T>)
+        : value_(value)
+    {
+    }
     explicit constexpr strong_type(T&& value) noexcept(
         std::is_nothrow_move_constructible_v<T>)
         : value_(std::move(value))
@@ -16,8 +20,8 @@ class strong_type : public Ops<strong_type<Tag, T, Ops...>>...
     explicit constexpr operator T&() noexcept { return value_; }
     explicit constexpr operator const T&() const noexcept { return value_; }
 
-    T& get() { return value_; }
-    T const& get() const { return value_; }
+    constexpr T& get() { return value_; }
+    constexpr T const& get() const { return value_; }
 
    private:
     T value_;
@@ -68,48 +72,47 @@ struct convertible_to_bool
 template <typename StrongT>
 struct comparisons
 {
-    friend constexpr bool operator<(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator<(const StrongT& aLhs, T&& aRhs)
     {
-        return aLhs.get() < aRhs.get();
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() < getValue(std::forward<T>(aRhs));
     }
 
-    friend constexpr bool operator==(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator==(const StrongT& aLhs, T&& aRhs)
     {
         return !(aLhs < aRhs) && !(aRhs < aLhs);
     }
 
-    friend constexpr bool operator!=(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator!=(const StrongT& aLhs, T&& aRhs)
     {
         return !(aLhs == aRhs);
     }
 
-    friend constexpr bool operator>(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator>(const StrongT& aLhs, T&& aRhs)
     {
         return aRhs < aLhs;
     }
 
-    friend constexpr bool operator<=(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator<=(const StrongT& aLhs, T&& aRhs)
     {
         return !(aRhs < aLhs);
     }
 
-    friend constexpr bool operator>=(const StrongT& aLhs, const StrongT& aRhs)
+    template <typename T>
+    friend constexpr bool operator>=(const StrongT& aLhs, T&& aRhs)
     {
         return !(aLhs < aRhs);
     }
 };
 
 template <typename StrongT>
-struct addition
+struct plus
 {
-    template <typename T>
-    friend constexpr StrongT& operator+=(StrongT& aLhs, T&& aRhs) noexcept
-    {
-        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        aLhs.get() += getValue(std::forward<T>(aRhs));
-        return aLhs;
-    }
-
     template <typename T>
     friend constexpr StrongT operator+(const StrongT& aLhs, T&& aRhs) noexcept
     {
@@ -119,16 +122,20 @@ struct addition
 };
 
 template <typename StrongT>
-struct subtraction
+struct plus_assignment
 {
     template <typename T>
-    friend constexpr StrongT& operator-=(StrongT& aLhs, T&& aRhs) noexcept
+    friend constexpr StrongT& operator+=(StrongT& aLhs, T&& aRhs) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        aLhs.get() -= getValue(std::forward<T>(aRhs));
+        aLhs.get() += getValue(std::forward<T>(aRhs));
         return aLhs;
     }
+};
 
+template <typename StrongT>
+struct minus
+{
     template <typename T>
     friend constexpr StrongT operator-(const StrongT& aLhs, T&& aRhs) noexcept
     {
@@ -138,15 +145,30 @@ struct subtraction
 };
 
 template <typename StrongT>
-struct increment
+struct minus_assignment
+{
+    template <typename T>
+    friend constexpr StrongT& operator-=(StrongT& aLhs, T&& aRhs) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aLhs.get() -= getValue(std::forward<T>(aRhs));
+        return aLhs;
+    }
+};
+
+template <typename StrongT>
+struct pre_increment
 {
     friend constexpr StrongT& operator++(StrongT& aValue)
     {
-        using type = underlying_type<StrongT>;
-        ++static_cast<type&>(aValue);
-        return aValue;
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return ++aValue.get();
     }
+};
 
+template <typename StrongT>
+struct post_increment
+{
     friend constexpr StrongT operator++(StrongT& aValue, int)
     {
         return ++StrongT(aValue);
@@ -154,15 +176,18 @@ struct increment
 };
 
 template <typename StrongT>
-struct decrement
+struct pre_decrement
 {
     friend constexpr StrongT& operator--(StrongT& aValue)
     {
-        using type = underlying_type<StrongT>;
-        --static_cast<type&>(aValue);
-        return aValue;
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return --aValue.get();
     }
+};
 
+template <typename StrongT>
+struct post_decrement
+{
     friend constexpr StrongT operator--(StrongT& aValue, int)
     {
         return --StrongT(aValue);
@@ -172,7 +197,11 @@ struct decrement
 template <typename StrongT>
 struct unary_plus
 {
-    friend constexpr StrongT operator+(const StrongT& aValue) { return aValue; }
+    friend constexpr StrongT operator+(const StrongT& aValue)
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aValue;
+    }
 };
 
 template <typename StrongT>
@@ -180,10 +209,11 @@ struct unary_minus
 {
     friend constexpr StrongT operator-(const StrongT& aValue)
     {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
         using type = underlying_type<StrongT>;
         static_assert(std::is_signed_v<type>,
                       "Negation a value of unsigned type is pointless action.");
-        return StrongT(-static_cast<type&>(aValue));
+        return StrongT(-aValue.get());
     }
 };
 
@@ -197,7 +227,11 @@ struct modulo
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
         return StrongT(aValue.get() % getValue(std::forward<T>(aDivider)));
     }
+};
 
+template <typename StrongT>
+struct modulo_assignment
+{
     template <typename T>
     friend constexpr StrongT& operator%=(StrongT& aValue, T&& aDivider) noexcept
     {
@@ -217,7 +251,11 @@ struct division
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
         return StrongT(aValue.get() / getValue(std::forward<T>(aDivider)));
     }
+};
 
+template <typename StrongT>
+struct division_assignment
+{
     template <typename T>
     friend constexpr StrongT& operator/=(StrongT& aValue, T&& aDivider) noexcept
     {
@@ -237,12 +275,152 @@ struct multiplication
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
         return StrongT(aValue1.get() * getValue(std::forward<T>(aValue2)));
     }
+};
 
+template <typename StrongT>
+struct multiplication_assignment
+{
     template <typename T>
     friend constexpr StrongT& operator*=(StrongT& aValue1, T&& aValue2) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
         aValue1.get() *= getValue(std::forward<T>(aValue2));
+        return aValue1;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_not
+{
+    friend constexpr StrongT operator~(const StrongT& aValue) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        StrongT result(~aValue.get());
+        return result;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_and
+{
+    template <typename T>
+    friend constexpr StrongT operator&(const StrongT& aValue1,
+                                       const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return StrongT(aValue1.get() & getValue(aValue2));
+    }
+};
+
+template <typename StrongT>
+struct bitwise_and_assignment
+{
+    template <typename T>
+    friend constexpr StrongT operator&=(const StrongT& aValue1,
+                                        const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aValue1.get() &= getValue(aValue2);
+        return aValue1;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_or
+{
+    template <typename T>
+    friend constexpr StrongT operator|(const StrongT& aValue1,
+                                       const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return StrongT(aValue1.get() | getValue(aValue2));
+    }
+};
+
+template <typename StrongT>
+struct bitwise_or_assignment
+{
+    template <typename T>
+    friend constexpr StrongT operator|=(const StrongT& aValue1,
+                                        const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aValue1.get() |= getValue(aValue2);
+        return aValue1;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_xor
+{
+    template <typename T>
+    friend constexpr StrongT operator^(const StrongT& aValue1,
+                                       const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return StrongT(aValue1.get() ^ getValue(aValue2));
+    }
+};
+
+template <typename StrongT>
+struct bitwise_xor_assignment
+{
+    template <typename T>
+    friend constexpr StrongT operator^=(const StrongT& aValue1,
+                                        const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aValue1.get() ^= getValue(aValue2);
+        return aValue1;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_left_shift
+{
+    template <typename T>
+    friend constexpr StrongT operator<<(const StrongT& aValue1,
+                                        const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return StrongT(aValue1.get() << getValue(aValue2));
+    }
+};
+
+template <typename StrongT>
+struct bitwise_left_shift_assignment
+{
+    template <typename T>
+    friend constexpr StrongT operator<<=(const StrongT& aValue1,
+                                         const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aValue1.get() <<= getValue(aValue2);
+        return aValue1;
+    }
+};
+
+template <typename StrongT>
+struct bitwise_right_shift
+{
+    template <typename T>
+    friend constexpr StrongT operator>>(const StrongT& aValue1,
+                                        const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return StrongT(aValue1.get() >> getValue(aValue2));
+    }
+};
+
+template <typename StrongT>
+struct bitwise_right_shift_assignment
+{
+    template <typename T>
+    friend constexpr StrongT operator>>=(const StrongT& aValue1,
+                                         const T& aValue2) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        aValue1.get() >>= getValue(aValue2);
         return aValue1;
     }
 };
