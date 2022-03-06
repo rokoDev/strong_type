@@ -31,7 +31,6 @@ install:
       $CLONE_URL = git remote get-url origin
       $BRANCH = $env:APPVEYOR_REPO_BRANCH
       cd .. 2> $null
-      Remove-Item -LiteralPath "$env:APPVEYOR_PROJECT_NAME" -Force -Recurse
       if ( "$env:APPVEYOR_PULL_REQUEST_NUMBER" -eq "" )
       {
           echo ("Branch <"+"$BRANCH"+"> will be cloned") 2> $null
