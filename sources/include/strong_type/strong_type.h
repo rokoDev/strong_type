@@ -1,3 +1,6 @@
+#ifndef strong_type_h
+#define strong_type_h
+
 #include <type_traits>
 
 namespace strong
@@ -425,3 +428,5 @@ struct bitwise_right_shift_assignment
     }
 };
 }  // namespace strong
+
+#endif /* strong_type_h */
