@@ -85,7 +85,8 @@ struct comparisons
     template <typename T>
     friend constexpr bool operator==(const StrongT& aLhs, T&& aRhs)
     {
-        return !(aLhs < aRhs) && !(aRhs < aLhs);
+        return !(aLhs < aRhs) &&
+               !(getValue(std::forward<T>(aRhs)) < aLhs.get());
     }
 
     template <typename T>
@@ -97,13 +98,13 @@ struct comparisons
     template <typename T>
     friend constexpr bool operator>(const StrongT& aLhs, T&& aRhs)
     {
-        return aRhs < aLhs;
+        return getValue(std::forward<T>(aRhs)) < aLhs.get();
     }
 
     template <typename T>
     friend constexpr bool operator<=(const StrongT& aLhs, T&& aRhs)
     {
-        return !(aRhs < aLhs);
+        return !(getValue(std::forward<T>(aRhs)) < aLhs.get());
     }
 
     template <typename T>
