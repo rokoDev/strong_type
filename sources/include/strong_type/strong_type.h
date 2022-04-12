@@ -9,6 +9,7 @@ template <typename Tag, typename T, template <typename> typename... Ops>
 class strong_type : public Ops<strong_type<Tag, T, Ops...>>...
 {
    public:
+    using value_type = T;
     strong_type() = default;
     explicit constexpr strong_type(T const& value) noexcept(
         std::is_nothrow_copy_constructible_v<T>)
