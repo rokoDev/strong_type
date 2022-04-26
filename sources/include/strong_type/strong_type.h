@@ -80,42 +80,40 @@ struct convertible_to_bool
 template <typename StrongT>
 struct comparisons
 {
-    template <typename T>
-    friend constexpr bool operator<(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator<(const StrongT& aLhs, const StrongT& aRhs)
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        return aLhs.get() < getValue(std::forward<T>(aRhs));
+        return aLhs.get() < aRhs.get();
     }
 
-    template <typename T>
-    friend constexpr bool operator==(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator==(const StrongT& aLhs, const StrongT& aRhs)
     {
-        return !(aLhs < aRhs) &&
-               !(getValue(std::forward<T>(aRhs)) < aLhs.get());
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() == aRhs.get();
     }
 
-    template <typename T>
-    friend constexpr bool operator!=(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator!=(const StrongT& aLhs, const StrongT& aRhs)
     {
-        return !(aLhs == aRhs);
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() != aRhs.get();
     }
 
-    template <typename T>
-    friend constexpr bool operator>(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator>(const StrongT& aLhs, const StrongT& aRhs)
     {
-        return getValue(std::forward<T>(aRhs)) < aLhs.get();
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() > aRhs.get();
     }
 
-    template <typename T>
-    friend constexpr bool operator<=(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator<=(const StrongT& aLhs, const StrongT& aRhs)
     {
-        return !(getValue(std::forward<T>(aRhs)) < aLhs.get());
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() <= aRhs.get();
     }
 
-    template <typename T>
-    friend constexpr bool operator>=(const StrongT& aLhs, T&& aRhs)
+    friend constexpr bool operator>=(const StrongT& aLhs, const StrongT& aRhs)
     {
-        return !(aLhs < aRhs);
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        return aLhs.get() >= aRhs.get();
     }
 };
 
