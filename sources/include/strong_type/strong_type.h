@@ -435,6 +435,16 @@ struct indirection
 {
     friend constexpr auto& operator*(StrongT aValue) { return *(aValue.get()); }
 };
+
+template <typename StrongT>
+struct subscription
+{
+    auto& operator[](std::size_t aIndex)
+    {
+        StrongT& ref = static_cast<StrongT&>(*this);
+        return *(ref.get() + aIndex);
+    }
+};
 }  // namespace strong
 
 #endif /* strong_type_h */

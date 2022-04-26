@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <array>
+
 #include "strong_type/strong_type.h"
 
 TEST(StrongTypeTests, Constructor)
@@ -101,4 +103,20 @@ TEST(StrongTypeTests, Indirection)
     uint8_t value{10};
     Indirection valuePtr{&value};
     ASSERT_EQ(value, *valuePtr);
+    ASSERT_EQ(&value, valuePtr.get());
+}
+
+TEST(StrongTypeTests, Subscription)
+{
+    using Subscription =
+        strong::strong_type<struct SubscriptionTag, uint8_t const *,
+                            strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Subscription valuePtr{valArray.data()};
+    for (std::size_t i = 0; i < kCount; ++i)
+    {
+        ASSERT_EQ(valArray[i], valuePtr[i]);
+    }
+    ASSERT_EQ(valArray.data(), valuePtr.get());
 }
