@@ -120,3 +120,16 @@ TEST(StrongTypeTests, Subscription)
     }
     ASSERT_EQ(valArray.data(), valuePtr.get());
 }
+
+TEST(StrongTypeTests, ImplicitlyConvertibleTo)
+{
+    using ImplicitlyConvertibleToUnderlying =
+        strong::strong_type<struct ImplicitlyConvertibleToUnderlyingTag,
+                            uint8_t const *,
+                            strong::implicitly_convertible_to_underlying>;
+    constexpr std::size_t kCount = 5;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    ImplicitlyConvertibleToUnderlying valuePtr{valArray.data()};
+    uint8_t const *ptr = valuePtr + 1;
+    ASSERT_EQ(ptr, valArray.data() + 1);
+}

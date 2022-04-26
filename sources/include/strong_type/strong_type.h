@@ -45,10 +45,14 @@ struct is_strong : std::false_type
 template <typename Tag, typename T, template <typename> typename... Ops>
 struct is_strong<strong_type<Tag, T, Ops...>> : std::true_type
 {
+    using type = T;
 };
 
 template <typename T>
 inline constexpr bool is_strong_v = is_strong<T>::value;
+
+template <typename T>
+using is_strong_t = typename is_strong<T>::type;
 
 template <typename T>
 constexpr decltype(auto) getValue(T&& aValue) noexcept
@@ -443,6 +447,17 @@ struct subscription
     {
         StrongT& ref = static_cast<StrongT&>(*this);
         return *(ref.get() + aIndex);
+    }
+};
+
+template <typename StrongT>
+struct implicitly_convertible_to_underlying
+{
+    using Destination = is_strong_t<StrongT>;
+    constexpr operator Destination() const
+    {
+        const StrongT& ref = static_cast<const StrongT&>(*this);
+        return ref.get();
     }
 };
 }  // namespace strong
