@@ -429,6 +429,12 @@ struct bitwise_right_shift_assignment
         return aValue1;
     }
 };
+
+template <typename StrongT>
+struct indirection
+{
+    friend constexpr auto& operator*(StrongT aValue) { return *(aValue.get()); }
+};
 }  // namespace strong
 
 #endif /* strong_type_h */

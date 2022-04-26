@@ -92,3 +92,13 @@ TEST(StrongTypeTests, Compare)
     static_assert(c != b, "Invalid result of operation !=");
     static_assert(b == d, "Invalid result of operation ==");
 }
+
+TEST(StrongTypeTests, Indirection)
+{
+    using Indirection =
+        strong::strong_type<struct IndirectionTag, uint8_t const *,
+                            strong::indirection>;
+    uint8_t value{10};
+    Indirection valuePtr{&value};
+    ASSERT_EQ(value, *valuePtr);
+}
