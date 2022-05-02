@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION ${cmake_version})
 set(ProjectName ${ProjectName}_tests)
 project(${ProjectName})
 
+include(FetchContent)
+
 get_filename_component(deps_content "../deps_content"
                        REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
 set(FETCHCONTENT_BASE_DIR ${deps_content})
@@ -23,7 +25,7 @@ endif (WIN32)
 macro(package_add_test TESTNAME)
   add_executable(${TESTNAME} "")
   target_sources(${TESTNAME} PRIVATE ${ARGN})
-  target_link_libraries(${TESTNAME} gtest gmock gtest_main fmt strong_type)
+  target_link_libraries(${TESTNAME} gtest gtest_main strong_type)
   add_test(NAME ${TESTNAME} COMMAND ${TESTNAME})
   set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
 
