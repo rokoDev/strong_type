@@ -1,18 +1,17 @@
 list(APPEND UNIX_BUILD_TYPES_CLANG_FLAGS
   "-std=c++17"
-  "-Werror"
   "-pedantic-errors"
   "-Wall"
   "-Wextra"
   "-Wconversion"
   "-Wsign-conversion"
-  "-Wshadow-all"
   "-Wunreachable-code"
   "-Wuninitialized"
   "-Wold-style-cast"
   "-Wfloat-equal"
   "-Wcast-align"
-  "-Winvalid-constexpr"
+  "-fno-exceptions"
+  "-fno-rtti"
   )
 
 list(APPEND WIN_BUILD_TYPES_CLANG_FLAGS
@@ -32,7 +31,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
     message(FATAL_ERROR "CMAKE_CXX_COMPILER_FRONTEND_VARIANT: ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}(Unrecognized)")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
+  list(APPEND UNIX_BUILD_TYPES_CLANG_FLAGS
+    "-Werror"
+    "-Wshadow-all"
+    "-Winvalid-constexpr"
+    )
   list(APPEND ALL_CXX_FLAGS "${UNIX_BUILD_TYPES_CLANG_FLAGS}")# "${CMAKE_CXX_FLAGS}"
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+  list(APPEND UNIX_BUILD_TYPES_CLANG_FLAGS "-Wshadow")
+  list(APPEND ALL_CXX_FLAGS "${UNIX_BUILD_TYPES_CLANG_FLAGS}")
 else()
   message(FATAL_ERROR "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}(Unrecognized)")
 endif()
