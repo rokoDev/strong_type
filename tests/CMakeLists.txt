@@ -5,15 +5,25 @@ project(${ProjectName})
 
 include(FetchContent)
 
-get_filename_component(deps_content "../deps_content"
-                       REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
-set(FETCHCONTENT_BASE_DIR ${deps_content})
+cmake_path(APPEND FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}" "deps_content" "${CMAKE_GENERATOR_NAME_WITHOUT_SPACES}")
 
 FetchContent_Declare(googletest
 	GIT_REPOSITORY https://github.com/google/googletest.git
 	GIT_TAG af29db7ec28d6df1c7f0f745186884091e602e07)
 
 FetchContent_MakeAvailable(googletest)
+
+add_library(tests_main STATIC)
+target_sources(tests_main
+  PRIVATE
+  src/main_tests.cpp
+  )
+target_link_libraries(tests_main PUBLIC gtest)
+get_target_property(tests_main_sources tests_main SOURCES)
+source_group(
+  TREE   ${CMAKE_CURRENT_SOURCE_DIR}/src
+  FILES  ${tests_main_sources}
+)
 
 if (WIN32)
 	option(CMAKE_USE_WIN32_THREADS_INIT "using WIN32 threads" ON)
@@ -24,8 +34,9 @@ endif (WIN32)
 
 macro(package_add_test TESTNAME)
   add_executable(${TESTNAME} "")
+  target_compile_definitions(${TESTNAME} PRIVATE $<UPPER_CASE:$<CONFIG>>)
   target_sources(${TESTNAME} PRIVATE ${ARGN})
-  target_link_libraries(${TESTNAME} gtest gtest_main strong_type)
+  target_link_libraries(${TESTNAME} PRIVATE strong_type tests_main)
   add_test(NAME ${TESTNAME} COMMAND ${TESTNAME})
   set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
 
@@ -35,10 +46,13 @@ macro(package_add_test TESTNAME)
     TREE   ${CMAKE_CURRENT_SOURCE_DIR}#/src
     FILES  ${strong_tests_src}
   )
+  # If colours in googletest are not disabled then in some versions of commandline tools which is used in Xcode 13.3 this
+  # can lead to output with escape sequences. Because of that its better to disable colours in googletest.
+  set_target_properties(${TESTNAME} PROPERTIES XCODE_GENERATE_SCHEME ON)
+  set_target_properties(${TESTNAME} PROPERTIES XCODE_SCHEME_ARGUMENTS "--gtest_color=no")
 endmacro()
 
 package_add_test(${ProjectName}
-	src/main_tests.cpp
 	src/strong_tests.cpp
 	)
 

@@ -77,18 +77,16 @@ install:
 before_build:
   - cmake --version
   - C:\Tools\vcpkg\vcpkg.exe integrate remove
-  - cmake -E make_directory build
-  - cd build
   - echo %PATH%
+  - cmake --preset=vs-clang
   # - ps: |
   #     clang-cl /?
-  - cmake -G "Visual Studio 16 2019" -A x64 -T ClangCL ..
 
 build_script:
-  - cmake --build . --target strong_type_tests --config %CONFIGURATION%
+  - cmake --build --preset=vs-clang-%CONFIGURATION%
 
 test_script:
-  - ctest -VV --output-on-failure -C %CONFIGURATION%
+  - ctest --preset=vs-clang-%CONFIGURATION%
 
 # on_finish:
 #   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
