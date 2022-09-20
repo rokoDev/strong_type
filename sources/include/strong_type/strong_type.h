@@ -2,6 +2,7 @@
 #define strong_type_h
 
 #include <type_traits>
+#include <utility>
 
 namespace strong
 {
