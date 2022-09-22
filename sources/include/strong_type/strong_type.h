@@ -121,22 +121,22 @@ struct comparisons
 template <typename StrongT>
 struct plus
 {
-    template <typename T>
-    friend constexpr StrongT operator+(const StrongT& aLhs, T&& aRhs) noexcept
+    friend constexpr StrongT operator+(const StrongT& aLhs,
+                                       const StrongT& aRhs) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        return StrongT(aLhs.get() + getValue(std::forward<T>(aRhs)));
+        return StrongT(aLhs.get() + aRhs.get());
     }
 };
 
 template <typename StrongT>
 struct plus_assignment
 {
-    template <typename T>
-    friend constexpr StrongT& operator+=(StrongT& aLhs, T&& aRhs) noexcept
+    friend constexpr StrongT& operator+=(StrongT& aLhs,
+                                         const StrongT& aRhs) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        aLhs.get() += getValue(std::forward<T>(aRhs));
+        aLhs.get() += aRhs.get();
         return aLhs;
     }
 };
@@ -144,22 +144,22 @@ struct plus_assignment
 template <typename StrongT>
 struct minus
 {
-    template <typename T>
-    friend constexpr StrongT operator-(const StrongT& aLhs, T&& aRhs) noexcept
+    friend constexpr StrongT operator-(const StrongT& aLhs,
+                                       const StrongT& aRhs) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        return StrongT(aLhs.get() - getValue(std::forward<T>(aRhs)));
+        return StrongT(aLhs.get() - aRhs.get());
     }
 };
 
 template <typename StrongT>
 struct minus_assignment
 {
-    template <typename T>
-    friend constexpr StrongT& operator-=(StrongT& aLhs, T&& aRhs) noexcept
+    friend constexpr StrongT& operator-=(StrongT& aLhs,
+                                         const StrongT& aRhs) noexcept
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        aLhs.get() -= getValue(std::forward<T>(aRhs));
+        aLhs.get() -= aRhs.get();
         return aLhs;
     }
 };
