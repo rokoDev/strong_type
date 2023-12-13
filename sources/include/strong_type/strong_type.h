@@ -119,6 +119,22 @@ struct comparisons
 };
 
 template <typename StrongT>
+struct assignment
+{
+    constexpr StrongT& operator=(const StrongT& aValue) noexcept
+    {
+        static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
+        if (this == &aValue)
+        {
+            return *this;
+        }
+        StrongT& ref = static_cast<StrongT&>(*this);
+        ref.get() = aValue.get();
+        return ref;
+    }
+};
+
+template <typename StrongT>
 struct plus
 {
     friend constexpr StrongT operator+(const StrongT& aLhs,

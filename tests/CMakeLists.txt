@@ -5,11 +5,9 @@ project(${ProjectName})
 
 include(FetchContent)
 
-cmake_path(APPEND FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}" "deps_content" "${CMAKE_GENERATOR_NAME_WITHOUT_SPACES}")
-
 FetchContent_Declare(googletest
 	GIT_REPOSITORY https://github.com/google/googletest.git
-	GIT_TAG af29db7ec28d6df1c7f0f745186884091e602e07)
+	GIT_TAG 530d5c8c84abd2a46f38583ee817743c9b3a42b4)
 
 FetchContent_MakeAvailable(googletest)
 

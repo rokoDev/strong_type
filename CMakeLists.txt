@@ -2,6 +2,17 @@ set(cmake_version 3.23.1)
 
 cmake_minimum_required(VERSION ${cmake_version})
 
+include(FetchContent)
+
+# Download toolchains and make available
+FetchContent_Declare(
+    cmake-toolchains
+    GIT_REPOSITORY https://github.com/rokoDev/cmake-toolchains.git
+    GIT_TAG        b7570c00c0967ca80266cabcfa6a23d2e98d891f
+)
+
+FetchContent_MakeAvailable(cmake-toolchains)
+
 set(ProjectName "strong_type")
 
 project(${ProjectName}
@@ -20,8 +31,6 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-string(REPLACE " " "" CMAKE_GENERATOR_NAME_WITHOUT_SPACES "${CMAKE_GENERATOR}")
 
 # To organize targets into groups when using IDE like XCode or VisualStudio, etc.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

@@ -11,6 +11,16 @@ TEST(StrongTypeTests, Constructor)
     static_assert(a.get() == 5, "Invalid value.");
 }
 
+TEST(StrongTypeTests, Assignment)
+{
+    using Number = strong::strong_type<struct NumberTag, uint8_t,
+                                       strong::assignment, strong::comparisons>;
+    Number a{5}, b{10};
+    a = b;
+    ASSERT_EQ(a, b);
+    ASSERT_EQ(a.get(), 10);
+}
+
 TEST(StrongTypeTests, Add)
 {
     using Number = strong::strong_type<struct NumberTag, uint8_t, strong::plus>;

@@ -1,22 +1,14 @@
 version: 2.1
 
-jobs:
-  build:
-    docker:
-      - image: rokodev/ubuntu2004clang13ninjacmake23:1.0
-        user: root
-        auth:
-          username: $DOCKERHUB_LOGIN
-          password: $DOCKERHUB_PASSWORD
+commands:
+  clone_branch_or_pr:
+    description: "Checkout source code from corresponding pull request or branch. Submodules are not taken into account."
     steps:
-      - run: printenv
       - run:
           name: "checkout sources"
           command: |
             CLONE_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git"
             echo "CLONE_URL: ${CLONE_URL}"
-            SOURCE_PATH=`pwd`"/${CIRCLE_PROJECT_REPONAME}"
-            echo "SOURCE_PATH: ${SOURCE_PATH}"
             if [ -n "$CIRCLE_PULL_REQUEST" ]; then
               PR_NUMBER=$(basename ${CIRCLE_PULL_REQUEST})
             else
@@ -25,41 +17,130 @@ jobs:
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" -eq "$PR_NUMBER" ] 2>/dev/null; then
               echo "This is pull request: ${PR_NUMBER}"
               git clone ${CLONE_URL}
-              cd $SOURCE_PATH
+              cd ${CIRCLE_PROJECT_REPONAME}
               BRANCH=pr${PR_NUMBER}
-              git fetch origin "pull/${PR_NUMBER}/head:${BRANCH}"
+              git fetch origin \"pull/${PR_NUMBER}/head:${BRANCH}\"
+              cd -
             else
               echo "This is simple branch: ${CIRCLE_BRANCH}"
-              BRANCH=${CIRCLE_BRANCH}
-              git clone -b ${BRANCH} --single-branch ${CLONE_URL}
-              cd $SOURCE_PATH
+              git clone -b ${CIRCLE_BRANCH} --single-branch ${CLONE_URL}
             fi
-            git checkout --recurse-submodules ${BRANCH}
-            git submodule foreach --recursive git checkout master
-            git submodule update --init --recursive
+
+jobs:
+  ubuntu_x86_64:
+    machine:
+      image: ubuntu-2204:2023.10.1
+    resource_class: large
+    steps:
+      - run: printenv
       - run:
-          name: "configure build test Ninja Debug"
+          name: Login to Dockerhub
           command: |
-            SOURCE_PATH=`pwd`"/${CIRCLE_PROJECT_REPONAME}"
-            cd $SOURCE_PATH
-            cmake --preset=ninja-clang-Debug
-            cmake --build --preset=ninja-clang-Debug
-            ctest --preset=ninja-clang-Debug
+            echo "$DOCKERHUB_PULL_TOKEN" | docker login --username $DOCKERHUB_LOGIN --password-stdin
+      - clone_branch_or_pr
       - run:
-          name: "configure build test Ninja Release"
+          name: Create directories for Debug and Release builds
           command: |
-            SOURCE_PATH=`pwd`"/${CIRCLE_PROJECT_REPONAME}"
-            cd $SOURCE_PATH
-            cmake --preset=ninja-clang-Release
-            cmake --build --preset=ninja-clang-Release
-            ctest --preset=ninja-clang-Release
+            mkdir -p build/amd64/Debug
+            mkdir -p build/amd64/Release
+            echo 'export SOURCE_DIR="$CIRCLE_WORKING_DIRECTORY"/"$CIRCLE_PROJECT_REPONAME"' >> "$BASH_ENV"
+            echo 'export BUILD_DIR="$CIRCLE_WORKING_DIRECTORY"/build/amd64' >> "$BASH_ENV"
+      - run:
+          name: Download dockerfiles
+          command: |
+            CLONE_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/Dockerfiles.git"
+            cd build
+            git clone -b master --single-branch ${CLONE_URL}
+            echo 'export DOCKERFILES_DIR="$CIRCLE_WORKING_DIRECTORY"/build/Dockerfiles' >> "$BASH_ENV"
+      - run:
+          name: Run docker container for amd64
+          command: |
+            . $DOCKERFILES_DIR/scripts/set-environment.sh -cc /usr/bin/gcc-12 -cxx /usr/bin/g++-12 -cv 12 -r /usr/bin/ranlib -s $SOURCE_DIR -b $BUILD_DIR -a amd64 -v
+            docker compose -f $DOCKERFILES_DIR/scripts/amd64/compose.yaml up -d
+      - run:
+          name: Mark source directory as safe to get rid of git error while getting hash of last change
+          command: |
+            docker exec -it "build-test-host" bash -c "git config --global --add safe.directory $SOURCE_DIR"
+      - run:
+          name: Configure, build and test ninja-clang-Debug
+          command: |
+            docker exec -it "build-test-host" bash -c "cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/Debug/_deps/cmake-toolchains-src/gnu.cmake -DCMAKE_BUILD_TYPE=\"Debug\" -S $SOURCE_DIR -B $BUILD_DIR/Debug"
+            docker exec -it "build-test-host" bash -c "cd $BUILD_DIR/Debug; cmake --build . --config Debug"
+            docker exec -it "build-test-host" bash -c "cd $BUILD_DIR/Debug; ctest -I ,,1 -C Debug --output-on-failure"
+      - run:
+          name: Configure, build and test ninja-clang-Release
+          command: |
+            docker exec -it build-test-host bash -c "cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/Release/_deps/cmake-toolchains-src/gnu.cmake -DCMAKE_BUILD_TYPE=\"Release\" -S $SOURCE_DIR -B $BUILD_DIR/Release"
+            docker exec -it build-test-host bash -c "cd $BUILD_DIR/Release; cmake --build . --config Release"
+            docker exec -it build-test-host bash -c "cd $BUILD_DIR/Release; ctest -I ,,1 -C Release --output-on-failure"
+  ubuntu_s390x:
+    machine:
+      image: ubuntu-2204:2023.10.1
+    resource_class: large
+    environment:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - run: printenv
+      - run:
+          name: Login to Dockerhub
+          command: |
+            echo "$DOCKERHUB_PULL_TOKEN" | docker login --username $DOCKERHUB_LOGIN --password-stdin
+      - run:
+          name: Enable run containers with different architectures
+          command: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - clone_branch_or_pr
+      - run:
+          name: Create directories for Debug and Release builds
+          command: |
+            mkdir -p build/s390x/Debug
+            mkdir -p build/s390x/Release
+            echo 'export SOURCE_DIR="$CIRCLE_WORKING_DIRECTORY"/"$CIRCLE_PROJECT_REPONAME"' >> "$BASH_ENV"
+            echo 'export BUILD_DIR="$CIRCLE_WORKING_DIRECTORY"/build/s390x' >> "$BASH_ENV"
+      - run:
+          name: Download dockerfiles
+          command: |
+            CLONE_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/Dockerfiles.git"
+            cd build
+            git clone -b master --single-branch ${CLONE_URL}
+            echo 'export DOCKERFILES_DIR="$CIRCLE_WORKING_DIRECTORY"/build/Dockerfiles' >> "$BASH_ENV"
+      - run:
+          name: Run docker containers for build and test on s390x architecture
+          command: |
+            . $DOCKERFILES_DIR/scripts/set-environment.sh -s $SOURCE_DIR -b $BUILD_DIR -v
+            docker compose -f $DOCKERFILES_DIR/scripts/s390x/compose.yaml up -d
+      - run:
+          name: Mark source directory as safe to get rid of git error while getting hash of last change
+          command: |
+            docker exec -it build-host bash -c "git config --global --add safe.directory $SOURCE_DIR"
+      - run:
+          name: Configure, build and test ninja-gnu-Debug
+          command: |
+            docker exec -it build-host bash -c "cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/Debug/_deps/cmake-toolchains-src/cross-linux-arch.cmake -DCMAKE_BUILD_TYPE=\"Debug\" -S $SOURCE_DIR -B $BUILD_DIR/Debug"
+            docker exec -it build-host bash -c "cd $BUILD_DIR/Debug; cmake --build . --config Debug"
+            cd $BUILD_DIR/Debug
+            ctest --output-on-failure
+      - run:
+          name: Configure, build and test ninja-gnu-Release
+          command: |
+            docker exec -it build-host bash -c "cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/Release/_deps/cmake-toolchains-src/cross-linux-arch.cmake -DCMAKE_BUILD_TYPE=\"Release\" -S $SOURCE_DIR -B $BUILD_DIR/Release"
+            docker exec -it build-host bash -c "cd $BUILD_DIR/Release; cmake --build . --config Release"
+            cd $BUILD_DIR/Release
+            ctest --output-on-failure
+
 workflows:
-  version: 2
-  run-all:
+  build_and_test:
     jobs:
-      - build:
+      - ubuntu_x86_64:
+          context:
+            - roko
           filters:
             branches:
               only:
                 - master
-                - develop
+      - ubuntu_s390x:
+          context:
+            - roko
+          filters:
+            branches:
+              only:
+                - master
