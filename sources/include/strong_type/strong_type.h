@@ -68,6 +68,19 @@ constexpr decltype(auto) getValue(T&& aValue) noexcept
     }
 }
 
+namespace details
+{
+template <typename StrongT>
+inline constexpr StrongT advance(const StrongT& aLhs,
+                                 std::ptrdiff_t aCount) noexcept
+{
+    static_assert(strong::is_strong_v<StrongT>, "Invalid StrongT.");
+    using value_type = strong::underlying_type<StrongT>;
+    static_assert(std::is_pointer_v<value_type>);
+    return StrongT(aLhs.get() + aCount);
+}
+}  // namespace details
+
 template <typename StrongT>
 struct convertible_to_bool
 {
@@ -458,7 +471,7 @@ struct indirection
 template <typename StrongT>
 struct subscription
 {
-    auto& operator[](std::size_t aIndex)
+    constexpr auto& operator[](std::size_t aIndex)
     {
         StrongT& ref = static_cast<StrongT&>(*this);
         return *(ref.get() + aIndex);
@@ -473,6 +486,49 @@ struct implicitly_convertible_to_underlying
     {
         const StrongT& ref = static_cast<const StrongT&>(*this);
         return ref.get();
+    }
+};
+
+template <typename StrongT>
+struct pointer_plus_value
+{
+    friend constexpr StrongT operator+(const StrongT& aLhs,
+                                       std::ptrdiff_t aValue) noexcept
+    {
+        return details::advance(aLhs, aValue);
+    }
+};
+
+template <typename StrongT>
+struct value_plus_pointer
+{
+    friend constexpr StrongT operator+(std::ptrdiff_t aValue,
+                                       const StrongT& aLhs) noexcept
+    {
+        return details::advance(aLhs, aValue);
+    }
+};
+
+template <typename StrongT>
+struct pointer_minus_value
+{
+    friend constexpr StrongT operator-(const StrongT& aLhs,
+                                       std::ptrdiff_t aValue) noexcept
+    {
+        return details::advance(aLhs, -aValue);
+    }
+};
+
+template <typename StrongT>
+struct pointer_minus_pointer
+{
+    friend constexpr std::ptrdiff_t operator-(const StrongT& aLhs,
+                                              const StrongT& aRhs) noexcept
+    {
+        static_assert(strong::is_strong_v<StrongT>, "Invalid StrongT.");
+        using value_type = strong::underlying_type<StrongT>;
+        static_assert(std::is_pointer_v<value_type>);
+        return aLhs.get() - aRhs.get();
     }
 };
 }  // namespace strong
