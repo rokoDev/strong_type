@@ -531,6 +531,28 @@ struct pointer_minus_pointer
         return aLhs.get() - aRhs.get();
     }
 };
+
+template <typename StrongT>
+struct pointer_plus_assignment
+{
+    friend constexpr StrongT& operator+=(StrongT& aLhs,
+                                         const std::ptrdiff_t& aRhs) noexcept
+    {
+        aLhs = details::advance(aLhs, aRhs);
+        return aLhs;
+    }
+};
+
+template <typename StrongT>
+struct pointer_minus_assignment
+{
+    friend constexpr StrongT& operator-=(StrongT& aLhs,
+                                         const std::ptrdiff_t& aRhs) noexcept
+    {
+        aLhs = details::advance(aLhs, -aRhs);
+        return aLhs;
+    }
+};
 }  // namespace strong
 
 #endif /* strong_type_h */
