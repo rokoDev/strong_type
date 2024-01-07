@@ -199,7 +199,8 @@ struct pre_increment
     friend constexpr StrongT& operator++(StrongT& aValue)
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        return ++aValue.get();
+        ++aValue.get();
+        return aValue;
     }
 };
 
@@ -208,7 +209,9 @@ struct post_increment
 {
     friend constexpr StrongT operator++(StrongT& aValue, int)
     {
-        return ++StrongT(aValue);
+        StrongT tmp{aValue.get()};
+        ++aValue.get();
+        return tmp;
     }
 };
 
@@ -218,7 +221,8 @@ struct pre_decrement
     friend constexpr StrongT& operator--(StrongT& aValue)
     {
         static_assert(is_strong_v<StrongT>, "Invalid StrongT.");
-        return --aValue.get();
+        --aValue.get();
+        return aValue;
     }
 };
 
@@ -227,7 +231,9 @@ struct post_decrement
 {
     friend constexpr StrongT operator--(StrongT& aValue, int)
     {
-        return --StrongT(aValue);
+        StrongT tmp{aValue.get()};
+        --aValue.get();
+        return tmp;
     }
 };
 
