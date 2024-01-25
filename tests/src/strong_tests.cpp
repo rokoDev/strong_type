@@ -143,3 +143,85 @@ TEST(StrongTypeTests, ImplicitlyConvertibleTo)
     uint8_t const *ptr = valuePtr + 1;
     ASSERT_EQ(ptr, valArray.data() + 1);
 }
+
+TEST(StrongTypeTests, PointerPlusValue)
+{
+    using Pointer =
+        strong::strong_type<struct PointerTag, uint8_t const *,
+                            strong::pointer_plus_value, strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 1;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr{valArray.data()};
+    auto shifted_ptr = ptr + kOffset;
+    ASSERT_EQ(shifted_ptr.get(), valArray.data() + kOffset);
+}
+
+TEST(StrongTypeTests, ValuePlusPointer)
+{
+    using Pointer =
+        strong::strong_type<struct PointerTag, uint8_t const *,
+                            strong::value_plus_pointer, strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 1;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr{valArray.data()};
+    auto shifted_ptr = kOffset + ptr;
+    ASSERT_EQ(shifted_ptr.get(), valArray.data() + kOffset);
+}
+
+TEST(StrongTypeTests, PointerMinusValue)
+{
+    using Pointer =
+        strong::strong_type<struct PointerTag, uint8_t const *,
+                            strong::pointer_minus_value, strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 1;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr{valArray.data() + kOffset};
+    auto shifted_ptr = ptr - kOffset;
+    ASSERT_EQ(shifted_ptr.get(), valArray.data());
+}
+
+TEST(StrongTypeTests, PointerMinusPointer)
+{
+    using Pointer = strong::strong_type<struct PointerTag, uint8_t const *,
+                                        strong::pointer_minus_pointer,
+                                        strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 2;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr1{valArray.data()};
+    Pointer ptr2{valArray.data() + kOffset};
+    const auto kDiff1 = ptr2 - ptr1;
+    ASSERT_EQ(kDiff1, kOffset);
+
+    const auto kDiff2 = ptr1 - ptr2;
+    ASSERT_EQ(kDiff2, -kOffset);
+}
+
+TEST(StrongTypeTests, PointerPlusAssignment)
+{
+    using Pointer = strong::strong_type<struct PointerTag, uint8_t const *,
+                                        strong::pointer_plus_assignment,
+                                        strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 3;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr{valArray.data()};
+    ptr += kOffset;
+    ASSERT_EQ(ptr.get(), valArray.data() + kOffset);
+}
+
+TEST(StrongTypeTests, PointerMinusAssignment)
+{
+    using Pointer = strong::strong_type<struct PointerTag, uint8_t const *,
+                                        strong::pointer_minus_assignment,
+                                        strong::subscription>;
+    constexpr std::size_t kCount = 5;
+    constexpr int kOffset = 3;
+    std::array<uint8_t, kCount> valArray{1, 2, 3, 4, 5};
+    Pointer ptr{valArray.data() + kOffset};
+    ptr -= kOffset;
+    ASSERT_EQ(ptr.get(), valArray.data());
+}

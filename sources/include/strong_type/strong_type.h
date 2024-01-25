@@ -498,30 +498,33 @@ struct implicitly_convertible_to_underlying
 template <typename StrongT>
 struct pointer_plus_value
 {
-    friend constexpr StrongT operator+(const StrongT& aLhs,
-                                       std::ptrdiff_t aValue) noexcept
+    template <typename T>
+    friend constexpr std::enable_if_t<std::is_integral_v<T>, StrongT> operator+(
+        const StrongT& aLhs, T aValue) noexcept
     {
-        return details::advance(aLhs, aValue);
+        return details::advance(aLhs, static_cast<std::ptrdiff_t>(aValue));
     }
 };
 
 template <typename StrongT>
 struct value_plus_pointer
 {
-    friend constexpr StrongT operator+(std::ptrdiff_t aValue,
-                                       const StrongT& aLhs) noexcept
+    template <typename T>
+    friend constexpr std::enable_if_t<std::is_integral_v<T>, StrongT> operator+(
+        T aValue, const StrongT& aLhs) noexcept
     {
-        return details::advance(aLhs, aValue);
+        return details::advance(aLhs, static_cast<std::ptrdiff_t>(aValue));
     }
 };
 
 template <typename StrongT>
 struct pointer_minus_value
 {
-    friend constexpr StrongT operator-(const StrongT& aLhs,
-                                       std::ptrdiff_t aValue) noexcept
+    template <typename T>
+    friend constexpr std::enable_if_t<std::is_integral_v<T>, StrongT> operator-(
+        const StrongT& aLhs, T aValue) noexcept
     {
-        return details::advance(aLhs, -aValue);
+        return details::advance(aLhs, -static_cast<std::ptrdiff_t>(aValue));
     }
 };
 
@@ -541,10 +544,11 @@ struct pointer_minus_pointer
 template <typename StrongT>
 struct pointer_plus_assignment
 {
-    friend constexpr StrongT& operator+=(StrongT& aLhs,
-                                         const std::ptrdiff_t& aRhs) noexcept
+    template <typename T>
+    friend constexpr std::enable_if_t<std::is_integral_v<T>, StrongT&>
+    operator+=(StrongT& aLhs, const T& aRhs) noexcept
     {
-        aLhs = details::advance(aLhs, aRhs);
+        aLhs = details::advance(aLhs, static_cast<const std::ptrdiff_t>(aRhs));
         return aLhs;
     }
 };
@@ -552,10 +556,11 @@ struct pointer_plus_assignment
 template <typename StrongT>
 struct pointer_minus_assignment
 {
-    friend constexpr StrongT& operator-=(StrongT& aLhs,
-                                         const std::ptrdiff_t& aRhs) noexcept
+    template <typename T>
+    friend constexpr std::enable_if_t<std::is_integral_v<T>, StrongT&>
+    operator-=(StrongT& aLhs, const T& aRhs) noexcept
     {
-        aLhs = details::advance(aLhs, -aRhs);
+        aLhs = details::advance(aLhs, -static_cast<const std::ptrdiff_t>(aRhs));
         return aLhs;
     }
 };
